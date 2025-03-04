@@ -1,46 +1,75 @@
--- Load UI Library
-local library = loadstring(game:HttpGet("https://pastebin.com/raw/someUILibrary"))()
+-- Juju.lol Remake
+-- Dark-themed modern GUI with Aimlock & ESP
 
--- Create Main Window
-local window = library:window({ 
-    name = "Modern Dark GUI", 
-    size = UDim2.fromOffset(550, 600), 
-    theme = "Dark", 
-})
+local GuiLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/someone/gui-framework/main.lua", true))()
 
--- Create Tabs
-local homeTab = window:tab({name = "Home"})
-local featuresTab = window:tab({name = "Features"})
-local settingsTab = window:tab({name = "Settings"})
+if not GuiLibrary then
+    warn("Failed to load GUI Library")
+    return
+end
 
--- Home Tab Content
-local homeSection = homeTab:section({name = "Welcome", side = "left"})
-homeSection:label({name = "Welcome to the GUI!"})
+local Window = GuiLibrary:CreateWindow("Juju.lol Remake", "Dark Mode")
+local AimlockTab = Window:CreateTab("Aimlock")
+local ESPTab = Window:CreateTab("ESP")
 
--- Features Tab Content
-local featuresSection = featuresTab:section({name = "Main Features", side = "left"})
-featuresSection:button({
-    name = "Feature 1",
-    callback = function()
-        print("Feature 1 activated!")
+-- Aimlock Functionality
+local aimlockEnabled = false
+local aimlockKey = Enum.KeyCode.E
+
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.KeyCode == aimlockKey then
+        aimlockEnabled = not aimlockEnabled
     end
-})
+end)
 
--- Settings Tab Content
-local settingsSection = settingsTab:section({name = "Customization"})
-settingsSection:toggle({
-    name = "Enable Dark Mode",
-    default = true,
-    callback = function(state)
-        print("Dark Mode: ", state)
+function Aimlock()
+    while aimlockEnabled do
+        local target = GetNearestTarget()
+        if target then
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = target.CFrame
+        end
+        wait(0.1)
     end
-})
+end
 
--- UI Toggle Keybind
-settingsSection:keybind({
-    name = "Toggle UI",
-    default = Enum.KeyCode.RightShift,
-    callback = function()
-        window:toggle()
+function GetNearestTarget()
+    local closest, distance = nil, math.huge
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local mag = (player.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+            if mag < distance then
+                closest = player.Character.HumanoidRootPart
+                distance = mag
+            end
+        end
     end
-})
+    return closest
+end
+
+-- ESP Functionality
+local espEnabled = false
+local espColor = Color3.fromRGB(255, 0, 0)
+
+function ToggleESP()
+    espEnabled = not espEnabled
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = player.Character
+            highlight.FillColor = espColor
+            highlight.OutlineTransparency = 0.5
+        end
+    end
+end
+
+AimlockTab:CreateToggle("Enable Aimlock", false, function(state)
+    aimlockEnabled = state
+    if state then
+        Aimlock()
+    end
+end)
+
+ESPTab:CreateToggle("Enable ESP", false, function(state)
+    espEnabled = state
+    ToggleESP()
+end)
